@@ -161,6 +161,7 @@ extern bool pushAndRotate;
 extern volatile bool seekStop;
 extern uint8_t rssi;
 extern uint8_t snr;
+extern bool afcRail;
 
 extern uint8_t volume;
 extern uint8_t currentSquelch[];

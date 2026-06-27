@@ -59,6 +59,9 @@ void drawLayoutDefault(const char *statusLine1, const char *statusLine2)
   // Indicate FM pilot detection (stereo indicator)
   drawStereoIndicator(METER_OFFSET_X, METER_OFFSET_Y, (currentMode==FM) && rx.getCurrentPilot());
 
+  // AFC centering indicator
+  drawAfcIndicator(AFC_OFFSET_X, AFC_OFFSET_Y);
+
   if(currentCmd == CMD_SCAN)
   {
     drawScanGraphs(isSSB()? (currentFrequency + currentBFO/1000) : currentFrequency);

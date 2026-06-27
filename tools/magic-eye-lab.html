@@ -1,0 +1,378 @@
+<title>Magic-Eye Lab — ATS-mini AFC indicator</title>
+<meta name="description" content="Interactive pixel-accurate design bench for the ATS-mini magic-eye tuning indicator.">
+<style>
+  :root{
+    --bg:#0c100e;          /* instrument panel, slight green bias */
+    --panel:#141b18;
+    --panel-2:#1b2421;
+    --line:#27332e;
+    --phosphor:#37e07b;    /* magic-eye glow */
+    --phosphor-dim:#0f3a26;
+    --amber:#e6b455;       /* vintage dial text */
+    --warn:#ff6a4a;        /* off-centre */
+    --ink:#cdd8d2;
+    --ink-mut:#7d8c85;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:
+      radial-gradient(1200px 600px at 70% -10%, #16201c 0%, var(--bg) 60%);
+    color:var(--ink);font-family:var(--sans);line-height:1.5;
+    padding:32px 24px 64px;
+  }
+  .wrap{max-width:1120px;margin:0 auto}
+  header{margin-bottom:24px;border-bottom:1px solid var(--line);padding-bottom:18px}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--phosphor);margin:0 0 8px}
+  h1{font-size:30px;line-height:1.1;margin:0;font-weight:650;text-wrap:balance;letter-spacing:-.01em}
+  h1 .mut{color:var(--ink-mut);font-weight:400}
+  .sub{margin:10px 0 0;color:var(--ink-mut);max-width:64ch;font-size:14px}
+
+  .bench{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:22px;align-items:start}
+  @media(max-width:880px){.bench{grid-template-columns:1fr}}
+
+  .stage{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 1px 0 #ffffff08 inset, 0 20px 40px -28px #000}
+  .screen-frame{background:#000;border-radius:10px;padding:10px;border:1px solid #000;
+    box-shadow:0 0 0 1px #2a3a33, 0 0 60px -20px var(--phosphor)}
+  canvas#screen{width:100%;height:auto;display:block;image-rendering:pixelated;border-radius:4px}
+  .legend{display:flex;flex-wrap:wrap;gap:14px 20px;margin-top:14px;font-family:var(--mono);font-size:12px;color:var(--ink-mut)}
+  .legend b{color:var(--ink);font-weight:600}
+  .swatch{display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:middle;margin-right:6px}
+
+  .zoom{margin-top:16px}
+  .zoom h3{margin:0 0 8px;font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-mut);font-weight:600}
+  canvas#zoom{width:100%;height:auto;display:block;image-rendering:pixelated;border-radius:6px;background:#000;border:1px solid var(--line)}
+
+  .controls{display:flex;flex-direction:column;gap:14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .card h2{margin:0 0 14px;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--amber);font-family:var(--mono);font-weight:600}
+  .ctl{margin-bottom:14px}
+  .ctl:last-child{margin-bottom:0}
+  .ctl label{display:flex;justify-content:space-between;font-size:12px;font-family:var(--mono);margin-bottom:6px;color:var(--ink)}
+  .ctl label .val{color:var(--phosphor);font-variant-numeric:tabular-nums}
+  input[type=range]{width:100%;accent-color:var(--phosphor);height:22px}
+  .seg{display:flex;gap:6px;flex-wrap:wrap}
+  .seg button{flex:1 1 auto;min-width:60px;background:var(--panel-2);border:1px solid var(--line);color:var(--ink-mut);
+    font-family:var(--mono);font-size:11px;padding:7px 6px;border-radius:8px;cursor:pointer;transition:.15s}
+  .seg button:hover{color:var(--ink);border-color:#3a4a43}
+  .seg button[aria-pressed=true]{background:var(--phosphor);color:#06140c;border-color:var(--phosphor);font-weight:700}
+  .seg button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+  .row{display:flex;gap:10px;align-items:center}
+  .row .swrap{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;color:var(--ink-mut)}
+  input[type=color]{width:30px;height:26px;border:1px solid var(--line);border-radius:6px;background:none;padding:2px;cursor:pointer}
+  .toggle{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px}
+  .toggle input{width:16px;height:16px;accent-color:var(--phosphor)}
+
+  .readout{font-family:var(--mono);font-size:11.5px;color:var(--ink-mut);background:#0a0f0d;border:1px solid var(--line);
+    border-radius:10px;padding:12px;white-space:pre-wrap;line-height:1.7}
+  .readout b{color:var(--phosphor)}
+  .note{font-size:12.5px;color:var(--ink-mut);margin-top:18px;border-top:1px solid var(--line);padding-top:14px}
+  .note b{color:var(--ink)}
+  kbd{font-family:var(--mono);background:var(--panel-2);border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:11px;color:var(--ink)}
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">ATS-mini · firmware fork XE1E · design bench</p>
+    <h1>Magic-Eye Lab <span class="mut">— indicador de sintonía AFC</span></h1>
+    <p class="sub">Réplica de la pantalla real (320×170 px) dibujada con las mismas primitivas que el firmware (rect / triángulo / círculo). Mueve los deslizadores para simular señal y offset; ajusta forma, tamaño, posición y color hasta que quede exacto. Lo que apruebes se porta 1:1 a <b style="color:var(--ink)">Draw.cpp</b>.</p>
+  </header>
+
+  <div class="bench">
+    <div class="stage">
+      <div class="screen-frame">
+        <canvas id="screen" width="320" height="170"></canvas>
+      </div>
+      <div class="legend">
+        <span><span class="swatch" style="background:var(--phosphor)"></span>Centrado / señal</span>
+        <span><span class="swatch" style="background:var(--warn)"></span>Descentrado</span>
+        <span><span class="swatch" style="background:var(--phosphor-dim)"></span>Vacío</span>
+        <span>Modo: <b id="modeLbl">FM</b></span>
+      </div>
+      <div class="zoom">
+        <h3>Zoom del indicador (8×)</h3>
+        <canvas id="zoom" width="320" height="120"></canvas>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="card">
+        <h2>Señal simulada (datos del chip)</h2>
+        <div class="ctl">
+          <label>RSSI · fuerza <span class="val" id="rssiV">42 dBµV</span></label>
+          <input type="range" id="rssi" min="0" max="70" value="42">
+        </div>
+        <div class="ctl">
+          <label>SNR · calidad <span class="val" id="snrV">18 dB</span></label>
+          <input type="range" id="snr" min="0" max="30" value="18">
+        </div>
+        <div class="ctl">
+          <label>FREQOFF · offset <span class="val" id="offV">0 kHz</span></label>
+          <input type="range" id="off" min="-20" max="20" value="0">
+        </div>
+        <div class="ctl">
+          <label class="toggle"><input type="checkbox" id="stereo" checked> Piloto estéreo (FM)</label>
+        </div>
+        <div class="ctl">
+          <label>Modo receptor</label>
+          <div class="seg" id="mode">
+            <button data-m="FM" aria-pressed="true">FM</button>
+            <button data-m="AM" aria-pressed="false">AM</button>
+            <button data-m="SSB" aria-pressed="false">SSB</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Estilo del ojo mágico</h2>
+        <div class="ctl">
+          <label>Variante</label>
+          <div class="seg" id="variant">
+            <button data-v="D" aria-pressed="true">D · estilo Berndt</button>
+            <button data-v="A" aria-pressed="false">A · barra+flechas</button>
+            <button data-v="B" aria-pressed="false">B · ojo redondo</button>
+            <button data-v="C" aria-pressed="false">C · solo flechas</button>
+          </div>
+        </div>
+        <div class="ctl">
+          <label>Posición X <span class="val" id="oxV">214</span></label>
+          <input type="range" id="ox" min="0" max="318" value="214">
+        </div>
+        <div class="ctl">
+          <label>Posición Y <span class="val" id="oyV">150</span></label>
+          <input type="range" id="oy" min="0" max="168" value="150">
+        </div>
+        <div class="ctl">
+          <label>Ancho <span class="val" id="wV">100</span></label>
+          <input type="range" id="w" min="30" max="200" value="100">
+        </div>
+        <div class="ctl">
+          <label>Alto <span class="val" id="hV">16</span></label>
+          <input type="range" id="h" min="6" max="40" value="16">
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Colores</h2>
+        <div class="row" style="flex-wrap:wrap;gap:14px">
+          <div class="swrap"><input type="color" id="cPhos" value="#37e07b">verde</div>
+          <div class="swrap"><input type="color" id="cDim" value="#0f3a26">vacío</div>
+          <div class="swrap"><input type="color" id="cWarn" value="#ff6a4a">aviso</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Mapeo a firmware</h2>
+        <div class="readout" id="readout"></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="note"><b>Cómo usarlo:</b> ajusta hasta que te guste, dime la <b>variante</b> y, si cambiaste algo, los valores que muestra “Mapeo a firmware”. Para clavar el estilo de Berndt, lo ideal es una <b>foto de su ojo mágico</b> (restauramos su binario un momento desde el backup, la fotografías y reflasheamos el fork) — o cualquier imagen suya que tengas. Con eso replico proporciones y colores exactos.</p>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const screen = $('screen'), sx = screen.getContext('2d');
+  const zoom = $('zoom'), zx = zoom.getContext('2d');
+
+  const state = {
+    rssi:42, snr:18, off:0, stereo:true, mode:'FM', variant:'D',
+    ox:212, oy:78, w:104, h:16,
+    phos:'#37e07b', dim:'#0f3a26', warn:'#ff6a4a'
+  };
+
+  // ---- tiny TFT-like primitive layer (1px grid = 1 TFT px) ----
+  const T = ctx => ({
+    rect:(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(x|0,y|0,w|0,h|0);},
+    frame:(x,y,w,h,c)=>{ctx.strokeStyle=c;ctx.lineWidth=1;ctx.strokeRect((x|0)+.5,(y|0)+.5,(w|0)-1,(h|0)-1);},
+    tri:(x1,y1,x2,y2,x3,y3,c)=>{ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.lineTo(x3,y3);ctx.closePath();ctx.fill();},
+    disc:(x,y,r,c)=>{ctx.fillStyle=c;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();},
+    ring:(x,y,r,c)=>{ctx.strokeStyle=c;ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.stroke();},
+    text:(s,x,y,size,c,align='left')=>{ctx.fillStyle=c;ctx.textAlign=align;ctx.textBaseline='top';ctx.font=`${size}px ui-monospace,monospace`;ctx.fillText(s,x,y);}
+  });
+
+  // mix two hex colors by t
+  function mix(a,b,t){
+    const pa=[1,3,5].map(i=>parseInt(a.slice(i,i+2),16));
+    const pb=[1,3,5].map(i=>parseInt(b.slice(i,i+2),16));
+    const p=pa.map((v,i)=>Math.round(v+(pb[i]-v)*t));
+    return '#'+p.map(v=>v.toString(16).padStart(2,'0')).join('');
+  }
+
+  // draw the rest of the screen for context (battery / band / freq / smeter)
+  function drawContext(t){
+    t.rect(0,0,320,170,'#000');
+    // top icons
+    t.frame(288,2,26,11,'#5a6b63'); t.rect(314,5,3,5,'#5a6b63'); t.rect(290,4,18,7,'#3a7d57');
+    t.text('FM',150,4,11,'#8fa39a','center');           // band
+    t.frame(176,3,26,13,'#3a4a43'); t.text(state.mode,189,5,9,'#cdd8d2','center');
+    // big frequency
+    t.text(state.mode==='FM'?'100.70':'7200',250,40,30,'#dfe9e3','right');
+    t.text(state.mode==='FM'?'MHz':'kHz',255,30,11,'#7d8c85','right');
+    // small left meter ticks (suggestion of S-meter)
+    for(let i=0;i<10;i++) t.rect(8+i*7,150,4,8, i< (state.rssi/70*10) ? '#3a7d57':'#1a2620');
+    t.text('S',2,148,9,'#5a6b63');
+  }
+
+  // ---- the magic eye, three variants ----
+  function drawEye(t){
+    const s=state;
+    const rssiF=Math.max(0,Math.min(1,s.rssi/60));
+    const offMag=Math.min(1,Math.abs(s.off)/15);     // 0 centred .. 1 far
+    const centred=1-offMag;
+    const active = s.mode==='FM';                      // AFC/offset only meaningful on FM
+    const eyeCol = mix(s.warn,s.phos,centred);         // green when centred, warn when off
+    const cx=s.ox+s.w/2, cy=s.oy+s.h/2;
+
+    if(s.variant==='D'){ drawEyeBerndt(t,s,rssiF,offMag,centred,active); return; }
+
+    if(!active){
+      // On AM/SSB we show only a plain signal bar (no centring eye)
+      t.rect(s.ox,s.oy,s.w,s.h,s.dim);
+      t.rect(s.ox,s.oy,Math.round(s.w*rssiF),s.h,mix(s.dim,s.phos,.85));
+      t.frame(s.ox,s.oy,s.w,s.h,'#2a3a33');
+      return;
+    }
+
+    if(s.variant==='A'){
+      // signal bar (bottom strip) + converging arrows + centre dot (top strip)
+      const barH=Math.max(3,Math.round(s.h*0.34));
+      const barY=s.oy+s.h-barH;
+      const eyeH=s.h-barH-1;
+      // arrow zone
+      const gap=Math.round((s.w/2-6)*offMag);          // tips approach centre as offMag->0
+      const tipL=cx-2-gap, tipR=cx+2+gap;
+      const ay=s.oy, ah=eyeH;
+      // left arrow (points right)
+      t.tri(s.ox, ay, s.ox, ay+ah, tipL, ay+ah/2, eyeCol);
+      // right arrow (points left)
+      t.tri(s.ox+s.w, ay, s.ox+s.w, ay+ah, tipR, ay+ah/2, eyeCol);
+      // centre dot: brightens + grows as centred
+      const r=2+Math.round(centred*2);
+      t.disc(cx, ay+ah/2, r, mix('#06140c',s.phos,0.4+centred*0.6));
+      // signal bar
+      t.rect(s.ox,barY,s.w,barH,s.dim);
+      t.rect(s.ox,barY,Math.round(s.w*rssiF),barH,s.phos);
+    }
+
+    else if(s.variant==='B'){
+      // classic round magic eye: ring + two shutters closing toward centre
+      const r=Math.round(s.h/2);
+      t.ring(cx,cy,r,'#2a3a33');
+      // phosphor wedge fill proportional to signal (like an eye opening)
+      const fillR=Math.round(r*rssiF);
+      t.disc(cx,cy,Math.max(1,fillR),mix(s.dim,s.phos,.9));
+      // dark shutters from both sides, gap closes as centred
+      const shut=Math.round((r)*offMag);
+      t.rect(cx-r-1, cy-r-1, shut, r*2+2, '#000');
+      t.rect(cx+r+1-shut, cy-r-1, shut, r*2+2, '#000');
+      // centre dot
+      t.disc(cx,cy,2,mix('#06140c',s.phos,0.4+centred*0.6));
+    }
+
+    else { // C — pure converging arrows with dot, no bar
+      const gap=Math.round((s.w/2-4)*offMag);
+      const tipL=cx-2-gap, tipR=cx+2+gap;
+      t.tri(s.ox, s.oy, s.ox, s.oy+s.h, tipL, cy, eyeCol);
+      t.tri(s.ox+s.w, s.oy, s.ox+s.w, s.oy+s.h, tipR, cy, eyeCol);
+      const r=2+Math.round(centred*3);
+      t.disc(cx,cy,r,mix('#06140c',s.phos,0.4+centred*0.6));
+    }
+  }
+
+  // ---- Berndt-faithful cluster: SIGNAL label + centring bar + arrows/dot + level ramp ----
+  function drawEyeBerndt(t,s,rssiF,offMag,centred,active){
+    const x=s.ox, y=s.oy, w=s.w, cx=x+w/2;
+    const gray='#aab4ae', txt='#dfe9e3', arrow='#bcd4e6';
+
+    // Row A — SIGNAL :rssi/snr
+    t.text('SIGNAL:'+s.rssi+'/'+String(s.snr).padStart(2,'0'), x, y, 9, txt);
+
+    // Row B — centring bar with sliding grey cursor
+    const barY=y+12, barH=7;
+    t.rect(x,barY,w,barH, s.phos);
+    const cur = active ? Math.max(-1,Math.min(1, s.off/15)) : 0;   // FREQOFF -> position
+    const cw=14;
+    let curX = Math.round(cx + cur*(w/2-cw/2) - cw/2);
+    curX = Math.max(x, Math.min(x+w-cw, curX));
+    t.rect(curX,barY,cw,barH, gray);
+
+    // Row C — opposing arrows pointing at a central dot
+    const lineY=y+barH+18;
+    t.rect(x,lineY,w,1, '#4a5a53');
+    const ag=9, ah=4;
+    t.tri(cx-ag-7,lineY-ah, cx-ag-7,lineY+ah, cx-ag,lineY, arrow);  // left ▷
+    t.tri(cx+ag+7,lineY-ah, cx+ag+7,lineY+ah, cx+ag,lineY, arrow);  // right ◁
+    const dotCol = active ? mix(s.warn,s.phos,centred) : s.phos;     // green when centred
+    t.disc(cx,lineY, 2+Math.round((active?centred:1)*2), dotCol);
+
+    // Row D — diagonal level ramp (signal strength), green -> red near clip
+    const rampBase=y+44, bars=14, lit=Math.round(rssiF*bars), bw=4, gap=2;
+    for(let i=0;i<bars;i++){
+      const bh=3+i*1.3;
+      const on=i<lit;
+      const col = on ? (i>=bars-3 ? '#ff5a3a' : s.phos) : '#163a28';
+      t.rect(x+i*(bw+gap), rampBase-bh, bw, bh, col);
+    }
+  }
+
+  function render(){
+    const ts=T(sx); drawContext(ts); drawEye(ts);
+    // zoom: redraw eye region scaled into zoom canvas
+    zx.imageSmoothingEnabled=false;
+    zx.fillStyle='#000'; zx.fillRect(0,0,zoom.width,zoom.height);
+    const pad=8, regionW=state.w+pad*2, regionH=state.h+pad*2;
+    const scale=Math.min(zoom.width/regionW, zoom.height/regionH);
+    zx.save();
+    zx.translate((zoom.width-regionW*scale)/2,(zoom.height-regionH*scale)/2);
+    zx.scale(scale,scale);
+    zx.translate(-(state.ox-pad),-(state.oy-pad));
+    drawEye(T(zx));
+    zx.restore();
+    updateReadout();
+  }
+
+  function updateReadout(){
+    const s=state;
+    $('readout').innerHTML =
+`variante : <b>${s.variant}</b>   modo: <b>${s.mode}</b>
+caja     : x=<b>${s.ox}</b> y=<b>${s.oy}</b> w=<b>${s.w}</b> h=<b>${s.h}</b>
+colores  : verde <b>${s.phos}</b>
+           vacío <b>${s.dim}</b>  aviso <b>${s.warn}</b>
+señal    : RSSI=<b>${s.rssi}</b>  FREQOFF=<b>${s.off>0?'+':''}${s.off}</b> kHz
+fuente   : getCurrentSignedFrequencyOffset() → flechas
+           getCurrentRSSI() → barra`;
+  }
+
+  // ---- wiring ----
+  const bind=(id,key,fmt,extra)=>{const el=$(id);el.addEventListener('input',()=>{
+    state[key]= (el.type==='checkbox')?el.checked: (isNaN(+el.value)?el.value:+el.value);
+    if(fmt) $(fmt).textContent=extra?extra(state[key]):state[key];
+    render();
+  });};
+  bind('rssi','rssi','rssiV',v=>v+' dBµV');
+  bind('snr','snr','snrV',v=>v+' dB');
+  bind('off','off','offV',v=>(v>0?'+':'')+v+' kHz');
+  bind('stereo','stereo');
+  bind('ox','ox','oxV'); bind('oy','oy','oyV');
+  bind('w','w','wV'); bind('h','h','hV');
+  $('cPhos').addEventListener('input',e=>{state.phos=e.target.value;render();});
+  $('cDim').addEventListener('input',e=>{state.dim=e.target.value;render();});
+  $('cWarn').addEventListener('input',e=>{state.warn=e.target.value;render();});
+
+  function seg(id,key,attr,after){
+    $(id).addEventListener('click',e=>{
+      const b=e.target.closest('button'); if(!b)return;
+      [...e.currentTarget.children].forEach(x=>x.setAttribute('aria-pressed', x===b));
+      state[key]=b.dataset[attr]; if(after)after(); render();
+    });
+  }
+  seg('mode','mode','m',()=>{$('modeLbl').textContent=state.mode;});
+  seg('variant','variant','v');
+
+  render();
+})();
+</script>

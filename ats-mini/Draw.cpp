@@ -340,6 +340,23 @@ void drawStereoIndicator(int x, int y, bool stereo)
 }
 
 //
+// Draw AFC centering indicator
+//
+// Shown only for FM/AM when a signal is present. The label is drawn in the
+// accent color when the AFC is locked/centered (rail indicator clear) and in
+// the warning color when off-center (rail indicator set), so it acts as a
+// tuning aid for zero-beating onto a carrier.
+//
+void drawAfcIndicator(int x, int y)
+{
+  if((isSSB() || rssi == 0) && !switchThemeEditor()) return;
+
+  spr.setTextDatum(TR_DATUM);
+  spr.setTextColor(afcRail ? TH.text_warn : TH.stereo_icon);
+  spr.drawString("AFC", x, y, 2);
+}
+
+//
 // Draw RDS station name (also CB channel, etc)
 //
 void drawStationName(const char *name, int x, int y)

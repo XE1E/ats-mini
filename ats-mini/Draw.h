@@ -31,6 +31,8 @@
 #define WIFI_OFFSET_Y    0    // WiFi y offset
 #define BLE_OFFSET_X   104    // BLE x offset
 #define BLE_OFFSET_Y     0    // BLE y offset
+#define AFC_OFFSET_X   319    // AFC indicator x offset (right-aligned)
+#define AFC_OFFSET_Y    30    // AFC indicator y offset
 
 void drawMessage(const char *msg);
 void drawZoomedMenu(const char *text, bool force = false);
@@ -46,6 +48,7 @@ void drawLongStationName(const char *name, int x, int y);
 void drawStationName(const char *name, int x, int y);
 void drawSMeter(int strength, int x, int y);
 void drawStereoIndicator(int x, int y, bool stereo = true);
+void drawAfcIndicator(int x, int y);
 bool drawWiFiStatus(const char *statusLine1, const char *statusLine2, int x, int y);
 void drawRadioText(int y, int ymax);
 void drawScale(uint32_t freq);

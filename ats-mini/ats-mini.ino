@@ -88,6 +88,7 @@ int16_t  currentBFO  = 0;
 
 uint8_t  rssi = 0;
 uint8_t  snr  = 0;
+bool     afcRail = false;  // AFC rail indicator (set => not locked/off-center)
 
 //
 // Devices
@@ -705,6 +706,10 @@ bool processRssiSnr()
   rx.getCurrentReceivedSignalQuality();
   int newRSSI = rx.getCurrentRSSI();
   int newSNR = rx.getCurrentSNR();
+
+  // AFC centering: rail indicator is cleared (0) when the AFC is locked on a
+  // properly tuned carrier, and set (1) when off-center or no lock (FM/AM).
+  afcRail = rx.getCurrentAfcRailIndicator();
 
   // Apply squelch if the volume is not muted
   uint8_t squelchValue = currentSquelch[currentMode] & 0x7f;
