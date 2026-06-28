@@ -32,7 +32,7 @@ Fork de [esp32-si4732/ats-mini](https://github.com/esp32-si4732/ats-mini) (MIT, 
 - 99 memorias, frecuencias con nombre (FT8/SSTV/CB)
 - RDS completo: PS, RadioText, PI, PTY, Clock-Time + sync NTP
 - Fast-tune (aceleración encoder), softmute, AGC, AVC, squelch, calibración por banda/modo
-- 8 temas, 2 layouts (Default / S-Meter grande), S-meter + SNR, indicador estéreo, icono de guardado
+- 9 temas, 2 layouts (Default / S-Meter grande), S-meter + SNR, indicador estéreo, icono de guardado
 - WiFi (5 modos + web UI), BLE (ad-hoc/HID), control serial (incluye captura de pantalla)
 - Almacenamiento NVS (Preferences) + LittleFS (EiBi)
 
