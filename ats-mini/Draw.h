@@ -3,12 +3,12 @@
 
 // Display position control
 #define MENU_OFFSET_X    0    // Menu horizontal offset
-#define MENU_OFFSET_Y   18    // Menu vertical offset
+#define MENU_OFFSET_Y    4    // Menu vertical offset (moved up: S-meter left the top)
 #define ALT_MENU_OFFSET_X    0    // Menu horizontal offset
 #define ALT_MENU_OFFSET_Y    0    // Menu vertical offset
 #define MENU_DELTA_X    10    // Menu width delta
-#define METER_OFFSET_X   0    // Meter horizontal offset
-#define METER_OFFSET_Y   0    // Meter vertical offset
+#define METER_OFFSET_X 237    // Meter horizontal offset (top-right)
+#define METER_OFFSET_Y  44    // Meter vertical offset (right of frequency)
 #define ALT_METER_OFFSET_X  75    // Meter horizontal offset
 #define ALT_METER_OFFSET_Y 136    // Meter vertical offset
 #define SAVE_OFFSET_X   90    // Preferences save icon horizontal offset
@@ -43,10 +43,11 @@ void drawWiFiIndicator(int x, int y);
 void drawSaveIndicator(int x, int y);
 void drawBleIndicator(int x, int y);
 void drawBandAndMode(const char *band, const char *mode, int x, int y);
-void drawFrequency(uint32_t freq, int x, int y, int ux, int uy, uint8_t hl);
+void drawFrequency(uint32_t freq, int x, int y, int ux, int uy, uint8_t hl, bool unit = true);
 void drawLongStationName(const char *name, int x, int y);
-void drawStationName(const char *name, int x, int y);
-void drawSMeter(int strength, int x, int y);
+void drawStationName(const char *name, int x, int y, int font = 4);
+void drawSMeter(int strength, int x, int y, bool icon = true);
+void drawScrollingText(const char *text, int x, int y, int w, int font);
 void drawStereoIndicator(int x, int y, bool stereo = true);
 void drawAfcIndicator(int x, int y);
 bool drawWiFiStatus(const char *statusLine1, const char *statusLine2, int x, int y);

@@ -35,32 +35,30 @@ void drawLayoutDefault(const char *statusLine1, const char *statusLine2)
     spr.drawString(TH.name, 319, BATT_OFFSET_Y + 17, 2);
   }
 
-  // Draw frequency, units, and optionally highlight a digit
+  // Draw frequency and optionally highlight a digit (no unit label here)
   drawFrequency(
     currentFrequency,
     FREQ_OFFSET_X, FREQ_OFFSET_Y,
     FUNIT_OFFSET_X, FUNIT_OFFSET_Y,
-    currentCmd == CMD_FREQ ? getFreqInputPos() + (pushAndRotate ? 0x80 : 0) : 100
+    currentCmd == CMD_FREQ ? getFreqInputPos() + (pushAndRotate ? 0x80 : 0) : 100,
+    false
   );
 
   // Show station or channel name, if present
   if(*getStationName() == 0xFF)
     drawLongStationName(getStationName() + 1, MENU_OFFSET_X + 1 + 76 + MENU_DELTA_X + 2, RDS_OFFSET_Y);
   else if(*getStationName())
-    drawStationName(getStationName(), RDS_OFFSET_X, RDS_OFFSET_Y);
+    drawStationName(getStationName(), RDS_OFFSET_X, RDS_OFFSET_Y, 2);
 
   // Draw left-side menu/info bar
   // @@@ FIXME: Frequency display (above) intersects the side bar!
   drawSideBar(currentCmd, MENU_OFFSET_X, MENU_OFFSET_Y, MENU_DELTA_X);
 
-  // Draw S-meter
-  drawSMeter(getStrength(rssi), METER_OFFSET_X, METER_OFFSET_Y);
+  // Draw S-meter (no antenna icon here, so the bars sit clear of the frequency)
+  drawSMeter(getStrength(rssi), METER_OFFSET_X, METER_OFFSET_Y, false);
 
   // Indicate FM pilot detection (stereo indicator)
   drawStereoIndicator(METER_OFFSET_X, METER_OFFSET_Y, (currentMode==FM) && rx.getCurrentPilot());
-
-  // AFC centering indicator
-  drawAfcIndicator(AFC_OFFSET_X, AFC_OFFSET_Y);
 
   if(currentCmd == CMD_SCAN)
   {
@@ -68,10 +66,11 @@ void drawLayoutDefault(const char *statusLine1, const char *statusLine2)
   }
   else if(!drawWiFiStatus(statusLine1, statusLine2, STATUS_OFFSET_X, STATUS_OFFSET_Y))
   {
-    // Show radio text if present, else show frequency scale
-    if(*getRadioText() || *getProgramInfo())
-      drawRadioText(STATUS_OFFSET_Y, STATUS_OFFSET_Y + 25);
-    else
-      drawScale(isSSB()? (currentFrequency + currentBFO/1000) : currentFrequency);
+    // Always show the frequency scale at the bottom; RDS text scrolls in the middle
+    drawScale(isSSB()? (currentFrequency + currentBFO/1000) : currentFrequency);
   }
+
+  // Scrolling RDS radio text on the middle line (full width, below params/freq)
+  if(currentCmd != CMD_SCAN && (*getRadioText() || *getProgramInfo()))
+    drawScrollingText(*getRadioText()? getRadioText() : getProgramInfo(), 2, 114, 316, 2);
 }

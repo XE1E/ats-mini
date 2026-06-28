@@ -67,7 +67,11 @@ Fork de [esp32-si4732/ats-mini](https://github.com/esp32-si4732/ats-mini) (MIT, 
       de radio → ~**62% más autonomía** en modo económico (medición de Berndt)
 
 ### 🔴 Difícil (infraestructura)
-- [ ] **drive** — modo USB Flash Drive (TinyUSB MSC) → exportar `logfile.txt`, `settings.txt`
+- [ ] **drive** — modo USB Flash Drive (**confirmado TinyUSB MSC** sobre FFat en el binario de
+      Berndt: strings `TinyUSB MSC`/`USB_MSC` + rastros Windows en su FFat) → exportar
+      `logfile.txt`, `settings.txt`, `hardcopy.bmp`. NOTA: Berndt **no** tiene protocolo serial
+      "ad hoc"; saca datos/capturas montando el dispositivo como **unidad USB**. Su screenshot
+      es la función `Hardcopy` → `/hardcopy.bmp`. (El fork usa serial `C` en su lugar.)
 
 ### ⏸️ Decoders (aplazados — requieren INMP441 para SSTV/WEFAX)
 - [ ] **rtty / cw** (directos) — variantes **RTTY45, RTTY75** y modo **TONE/BL**; decodificación

@@ -148,7 +148,7 @@ void drawRadioText(int y, int ymax)
 //
 // Draw frequency
 //
-void drawFrequency(uint32_t freq, int x, int y, int ux, int uy, uint8_t hl)
+void drawFrequency(uint32_t freq, int x, int y, int ux, int uy, uint8_t hl, bool unit)
 {
   struct Line { int x, y, w; };
 
@@ -201,9 +201,12 @@ void drawFrequency(uint32_t freq, int x, int y, int ux, int uy, uint8_t hl)
 
     // FM frequency
     spr.drawFloat(freq/100.00, 2, x, y, 7);
-    spr.setTextDatum(ML_DATUM);
-    spr.setTextColor(TH.funit_text);
-    spr.drawString("MHz", ux, uy);
+    if(unit)
+    {
+      spr.setTextDatum(ML_DATUM);
+      spr.setTextColor(TH.funit_text);
+      spr.drawString("MHz", ux, uy);
+    }
   }
   else
   {
@@ -230,8 +233,11 @@ void drawFrequency(uint32_t freq, int x, int y, int ux, int uy, uint8_t hl)
     }
 
     // SSB/AM frequencies are measured in kHz
-    spr.setTextColor(TH.funit_text);
-    spr.drawString("kHz", ux, uy);
+    if(unit)
+    {
+      spr.setTextColor(TH.funit_text);
+      spr.drawString("kHz", ux, uy);
+    }
   }
 
   // If drawing an underscore...
@@ -255,9 +261,11 @@ void drawFrequency(uint32_t freq, int x, int y, int ux, int uy, uint8_t hl)
 //
 void drawScale(uint32_t freq)
 {
-  // Scale pointer
-  spr.fillTriangle(156, 120, 160, 130, 164, 120, TH.scale_pointer);
-  spr.drawLine(160, 130, 160, 169, TH.scale_pointer);
+  // Scale pointer. Shorten it (start lower) when the scrolling RDS text is
+  // present, so its head doesn't collide with the text on the middle line.
+  int pty = (*getRadioText() || *getProgramInfo()) ? 132 : 120;
+  spr.fillTriangle(156, pty, 160, pty + 10, 164, pty, TH.scale_pointer);
+  spr.drawLine(160, pty + 10, 160, 169, TH.scale_pointer);
 
   spr.setTextDatum(MC_DATUM);
   spr.setTextColor(TH.scale_text);
@@ -312,17 +320,22 @@ void drawScale(uint32_t freq)
 //
 // Draw S-meter
 //
-void drawSMeter(int strength, int x, int y)
+void drawSMeter(int strength, int x, int y, bool icon)
 {
-  spr.drawTriangle(x + 1, y + 1, x + 11, y + 1, x + 6, y + 6, TH.smeter_icon);
-  spr.drawLine(x + 6, y + 1, x + 6, y + 14, TH.smeter_icon);
-
-  for(int i=0 ; i<strength ; i++)
+  if(icon)
   {
-    if(i<10)
-      spr.fillRect(15+x + (i*4), 2+y, 2, 12, TH.smeter_bar);
-    else
-      spr.fillRect(15+x + (i*4), 2+y, 2, 12, TH.smeter_bar_plus);
+    spr.drawTriangle(x + 1, y + 1, x + 11, y + 1, x + 6, y + 6, TH.smeter_icon);
+    spr.drawLine(x + 6, y + 1, x + 6, y + 14, TH.smeter_icon);
+  }
+
+  // Draw the full 17-segment track: lit bars up to the signal strength, the
+  // rest as dim "empty" bars so the meter keeps a constant width (no gap).
+  for(int i=0 ; i<17 ; i++)
+  {
+    uint16_t color = (i >= strength) ? TH.smeter_bar_empty
+                   : (i < 10)        ? TH.smeter_bar
+                                     : TH.smeter_bar_plus;
+    spr.fillRect(15+x + (i*4), 2+y, 2, 12, color);
   }
 }
 
@@ -357,13 +370,41 @@ void drawAfcIndicator(int x, int y)
 }
 
 //
+// Draw a horizontally scrolling (marquee) text line.
+// If the text fits in w it is centered and static; otherwise it scrolls
+// right-to-left in a seamless loop. Time-based, so it animates whenever the
+// screen is redrawn (the main loop ticks a redraw while RDS text is present).
+//
+void drawScrollingText(const char *text, int x, int y, int w, int font)
+{
+  if(!text || !*text) return;
+
+  spr.setTextColor(TFT_YELLOW);
+  int tw = spr.textWidth(text, font);
+
+  if(tw <= w)
+  {
+    spr.setTextDatum(TC_DATUM);
+    spr.drawString(text, x + w / 2, y, font);
+    return;
+  }
+
+  const int gap = 40;
+  int period = tw + gap;
+  int off = (int)((millis() / 25) % period);   // ~40 px/s; lower divisor = faster
+  spr.setTextDatum(TL_DATUM);
+  spr.drawString(text, x - off, y, font);
+  spr.drawString(text, x - off + period, y, font);
+}
+
+//
 // Draw RDS station name (also CB channel, etc)
 //
-void drawStationName(const char *name, int x, int y)
+void drawStationName(const char *name, int x, int y, int font)
 {
   spr.setTextDatum(TC_DATUM);
   spr.setTextColor(TH.rds_text);
-  spr.drawString(name, x, y, 4);
+  spr.drawString(name, x, y, font);
 }
 
 //

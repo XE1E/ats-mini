@@ -991,6 +991,14 @@ void loop()
   // Run clock
   needRedraw |= clockTickTime();
 
+  // Animate the scrolling RDS radio text on the middle line
+  static uint32_t lastScrollTick = 0;
+  if(!sleepOn() && *getRadioText() && (currentTime - lastScrollTick) > 70)
+  {
+    needRedraw = true;
+    lastScrollTick = currentTime;
+  }
+
   // Periodically refresh the main screen
   // This covers the case where there is nothing else triggering a refresh
   if(needRedraw) background_timer = currentTime;
