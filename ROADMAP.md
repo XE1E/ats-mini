@@ -171,5 +171,37 @@ Copiar manualmente (USB/nube) el archivo **`ats-mini-berndt-handoff.zip`** que c
   del cursor gris, tamaño de flechas y punto, layout). Preguntar al usuario qué difiere más.
 - Datos del chip para el ojo mágico: `getCurrentRSSI()`, `getCurrentSNR()`,
   `getCurrentSignedFrequencyOffset()` (int8 kHz, solo FM), `getCurrentPilot()`.
-- **El ATS mini quedó con el firmware de BERNDT restaurado** (no el fork). Para volver al fork:
-  recompilar + `upload`.
+- **Estado del dispositivo:** el fork está flasheado y `Settings → USB Port = Ad hoc` quedó
+  ACTIVADO (persiste en NVS) → la captura por serial funciona. (El binario de Berndt está en el backup.)
+
+---
+
+## 6. Herramientas de desarrollo (carpeta `tools/`)
+
+### 🖼️ Captura del display REAL (clave para el diseño de UI)
+El firmware vuelca el framebuffer por serial con el comando `C` (requiere `USB Port = Ad hoc`).
+Esto da una imagen **pixel-perfect** de lo que se ve — la verdad final para iterar la UI.
+```powershell
+# COM port distinto por PC: Get-CimInstance Win32_PnPEntity | ? {$_.Name -match 'COM\d+'}
+powershell -File tools/capture-screenshot.ps1 -Port COM7 -OutDir .
+#  -> screenshot.hex + screenshot.png  (usa tools/hex2png.py para convertir)
+```
+Flujo de diseño: **editar → compilar → flashear → `capture-screenshot.ps1` → revisar PNG → ajustar.**
+BMP del firmware = RGB565, byte-swap (htons), filas bottom-up (ver `Remote.cpp::remoteCaptureScreen`).
+
+### 📦 Extraer archivos del backup de Berndt (FFat)
+`tools/parse_parts.py <dump.bin>` lista la tabla de particiones. La FFat de Berndt está en
+`0x290000` (1408 KB, FAT12). Carvear esa región a `.img` y abrir con **7-Zip** (`7z x part.img`).
+
+## 7. Referencias REALES de Berndt (extraídas del backup, en el handoff zip)
+
+`Documents/ats-mini-berndt-backup/berndt-ffat-files/` — sus ficheros reales (formatos para clonar):
+- **`settings.txt`** (magic `9997`) — modelo de ajustes de Berndt. Campos: `menu, bandwidthSSB/AM/FM,
+  stepSSB/AM/FM, mode, battery, decoder, automute, band, store, station, volume, agcFM/AM/SSB,
+  softmute, bfo, frequency, backlight, tint, inverse, greyscale, home <lat,lon>, slow, seek`.
+  → Confirma features: `decoder, automute, tint, inverse, greyscale, slow (powersave), seek`, y
+  **`home 51.198467, 6.879189`** = coords para calcular **distancia al transmisor**.
+- **`user.txt` / `stations.txt`** (magic `9998`) — frecuencias con nombre: `freq,nombre`
+  (WWV + canales CB 1-40). Formato de listas de estaciones de Berndt.
+- **`etm_1.txt`** — resultado ETM: lista rankeada `idx hora freq(kHz) nivel`. Formato del escáner ETM.
+- (No había `hardcopy.bmp` en el volcado → para SU UI usamos las fotos en `reference-photos/`.)
