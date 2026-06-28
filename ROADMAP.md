@@ -209,3 +209,52 @@ BMP del firmware = RGB565, byte-swap (htons), filas bottom-up (ver `Remote.cpp::
   (WWV + canales CB 1-40). Formato de listas de estaciones de Berndt.
 - **`etm_1.txt`** — resultado ETM: lista rankeada `idx hora freq(kHz) nivel`. Formato del escáner ETM.
 - (No había `hardcopy.bmp` en el volcado → para SU UI usamos las fotos en `reference-photos/`.)
+
+---
+
+## 8. RDS — referencia (campos, menú, US vs EU)
+
+**RDS** (Radio Data System) = subcanal digital en la subportadora de **57 kHz**, solo en **FM**
+(en AM/SSB no hay). Definiciones de campos en `Common.h`; lógica en `Station.cpp`; menú en `Menu.cpp`.
+
+### Campos que manda la emisora
+
+| Campo | Nombre | Contenido | En el fork (`Station.cpp`) | Cómo lo desplegamos |
+|---|---|---|---|---|
+| **PS** | Program Service | Nombre corto (8 car.) | `getRdsStationName()` | Texto bajo la frecuencia |
+| **RT** | RadioText | Texto largo (≤64 car.): canción/programa | `getRdsText2A/2B()` | **Scroll amarillo** línea media |
+| **PI** | Program Identification | Código hex único (país/cadena) | `getRdsPI()` | Ventana de info (`PI:`) |
+| **PTY** | Program Type | Género (News, Rock, Country…) | `getRdsProgramTypeX()` | Texto del tipo de programa |
+| **CT** | Clock Time | Hora/fecha oficiales | `getRdsTime()` | **Sincroniza el reloj** |
+| **RBDS** | (bandera US) | Selecciona tabla de géneros US | — | Cambia nombres de PTY |
+
+> Campos del estándar que la emisora puede mandar pero el fork **NO usa** (posibles mejoras):
+> **AF** (frecuencias alternativas), **TP/TA** (tráfico), **EON**, **PIN**.
+
+### Menú `RDS` — las 8 combinaciones (todas las disponibles hoy)
+Definidas en `Menu.cpp` → `rdsMode[]`. Cada opción es una máscara de bits que activa campos:
+
+| Opción (texto del menú) | Campos activados |
+|---|---|
+| `PS` | PS |
+| `PS+CT` | PS + reloj |
+| `PS+PI` | PS + código PI |
+| `PS+PI+CT` | PS + PI + reloj |
+| `ALL-CT (EU)` | PS + PI + **RT** + PTY (sin reloj) — géneros europeos |
+| `ALL-CT (US)` | igual + **RBDS** (géneros US) |
+| `ALL (EU)` | PS + PI + RT + PTY + **CT** — géneros europeos |
+| `ALL (US)` | todo + **RBDS** (géneros US) |
+
+→ **Son las 8 que existen.** Se podrían añadir más combinaciones editando `rdsMode[]`, pero estas
+cubren los casos útiles. Para ver el **scroll de RadioText** hay que estar en `ALL-CT` o `ALL`
+(las únicas que activan **RT**).
+
+### Diferencia US (RBDS) vs EU (RDS)
+Es el **mismo RDS físico**; lo que cambia es la **tabla de géneros PTY**:
+- **EU (RDS, norma CENELEC)** y **US (RBDS, norma NRSC)** asignan **nombres distintos al mismo número
+  de PTY** (ej. el código 10 no significa lo mismo en ambas tablas). La bandera `RDS_RBDS` elige
+  qué tabla usar al mostrar el género.
+- En **US (RBDS)** además el código **PI suele derivar el indicativo** de la emisora (call sign
+  K.../W...). El fork muestra el PI en hex; convertir a call sign sería una mejora.
+- Regla práctica: estaciones de **Europa/México/Latam → usar la variante (EU)**; estaciones de
+  **EE. UU./Canadá → (US)**. Si los géneros salen raros, cambia de tabla.
