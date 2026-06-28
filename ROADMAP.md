@@ -12,6 +12,10 @@ Fork de [esp32-si4732/ats-mini](https://github.com/esp32-si4732/ats-mini) (MIT, 
     el motor de decodificación + UI → tuning fluido y decodificación estable en HF saturada.
   - La web oficial es HTTP con certificado autofirmado (no fetchable por herramienta); detalles
     confirmados vía releases documentados en DXR Electronics Bits (vu3dxr.in).
+  - 📘 **Referencia maestra:** [`docs/berndt-reference.md`](docs/berndt-reference.md) — extracción
+    técnica completa de las 36 páginas de su web (menús, decoders, cableado INMP441, magic numbers
+    de backlight, protocolo serial, formatos de archivo, IBP, waterfall, etc.). PDF original y
+    archivos en `Documents/ats-mini-berndt-backup/`.
 - **Nota decoders:** SSTV/WEFAX requieren añadir un micrófono I2S **INMP441**; RTTY/CW son directos.
   No es la prioridad actual.
 - **Alcance legal:** objetivo = paridad de **funciones/comportamiento** reimplementadas desde cero
